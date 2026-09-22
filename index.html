@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustPay — Payment Risk Intelligence Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --surface: #12131a;
+      --surface-2: #1a1b26;
+      --border: #232536;
+      --border-light: #32354d;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
+    .card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .label-section {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .btn-primary {
+      background-color: #ef4444;
+      color: white;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background-color: #dc2626;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    }
+    .btn-secondary {
+      background-color: var(--surface-2);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      font-weight: 500;
+      padding: 10px 18px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: #475569;
+      background-color: #242638;
+    }
+    .input-field {
+      width: 100%;
+      background-color: var(--surface-2);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: white;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
+    }
+    .risk-badge-high { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .risk-badge-med { background: rgba(245,158,11,0.15); color: #fde68a; border: 1px solid rgba(245,158,11,0.3); }
+    .risk-badge-low { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .nav-btn.active {
+      background: rgba(239,68,68,0.12);
+      color: #f87171;
+      border-left: 3px solid #ef4444;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row">
+
+  <!-- Sidebar Nav -->
+  <aside class="w-full md:w-64 bg-[#12131a] border-r border-[#232536] p-4 flex flex-col justify-between shrink-0">
+    <div>
+      <div class="flex items-center gap-3 px-2 py-3 mb-6 border-b border-[#232536]">
+        <div class="w-8 h-8 rounded bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+          <i data-lucide="shield"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold tracking-wide text-white text-base">TRUST<span class="text-red-500">PAY</span></h1>
+          <p class="text-[10px] text-slate-400 font-mono">Risk Intelligence</p>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <p class="label-section px-2 mb-2">Navigation</p>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm text-slate-300 hover:bg-[#1a1b26] hover:text-white transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </button>
+        <button onclick="switchTab('payment')" id="nav-payment" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm text-slate-300 hover:bg-[#1a1b26] hover:text-white transition">
+          <i data-lucide="send" class="w-4 h-4"></i> Analyze Payment
+        </button>
+        <button onclick="switchTab('network')" id="nav-network" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm text-slate-300 hover:bg-[#1a1b26] hover:text-white transition">
+          <i data-lucide="network" class="w-4 h-4"></i> Network Graph
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm text-slate-300 hover:bg-[#1a1b26] hover:text-white transition">
+          <i data-lucide="user" class="w-4 h-4"></i> User Profile
+        </button>
+        <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm text-slate-300 hover:bg-[#1a1b26] hover:text-white transition">
+          <i data-lucide="list" class="w-4 h-4"></i> Transactions
+        </button>
+      </nav>
+    </div>
+
+    <div class="mt-6 pt-4 border-t border-[#232536] text-xs text-slate-400">
+      <div class="flex items-center justify-between mb-1">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Risk Engine
+        </span>
+        <span class="font-mono text-[10px] text-emerald-400">v0.1.0 Ready</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="space-y-6">
+      <div class="flex justify-between items-start flex-wrap gap-4">
+        <div>
+          <p class="label-section">Overview</p>
+          <h2 class="text-2xl font-bold text-white mt-1">Good morning, Ayush</h2>
+          <p class="text-sm text-slate-400">Here is your real-time payment risk intelligence overview.</p>
+        </div>
+        <button onclick="switchTab('payment')" class="btn-primary">
+          <i data-lucide="send" class="w-4 h-4"></i> New Payment Analysis
+        </button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card p-4">
+          <p class="label-section">Risk Status</p>
+          <p class="text-2xl font-bold text-emerald-400 mt-1">NORMAL</p>
+          <p class="text-xs text-slate-400 mt-0.5">Baseline score: 18/100</p>
+        </div>
+        <div class="card p-4">
+          <p class="label-section">Transactions Today</p>
+          <p class="text-2xl font-bold text-white mt-1">7</p>
+          <p class="text-xs text-slate-400 mt-0.5">Average: 5/day</p>
+        </div>
+        <div class="card p-4">
+          <p class="label-section">Known Recipients</p>
+          <p class="text-2xl font-bold text-white mt-1">12</p>
+          <p class="text-xs text-slate-400 mt-0.5">Trusted contacts</p>
+        </div>
+        <div class="card p-4 border-red-500/30 bg-red-500/5">
+          <p class="label-section">Flagged Anomalies</p>
+          <p class="text-2xl font-bold text-red-400 mt-1">1</p>
+          <p class="text-xs text-red-300/80 mt-0.5">High-risk payment blocked</p>
+        </div>
+      </div>
+
+      <!-- Hero Demo Trigger Banner -->
+      <div class="card p-5 border-red-500/20 bg-gradient-to-r from-red-500/10 via-transparent to-transparent flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 border border-red-500/30 font-mono">HACKATHON DEMO</span>
+            <h3 class="font-bold text-white text-base">Test Suspicious Payment Scenario</h3>
+          </div>
+          <p class="text-sm text-slate-300">Run a simulated ₹48,000 transfer to an unknown recipient with urgent scam keywords to trigger the full risk explanation engine.</p>
+        </div>
+        <button onclick="runDemoScenario('suspicious')" class="btn-primary shrink-0">
+          Run Scam Demo
+        </button>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-[#232536] flex justify-between items-center">
+          <p class="label-section">Recent Transaction History</p>
+          <button onclick="switchTab('transactions')" class="text-xs text-slate-400 hover:text-white">View All →</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-[#1a1b26] text-slate-400 font-mono border-b border-[#232536]">
+              <tr>
+                <th class="p-3">Time</th>
+                <th class="p-3">Recipient</th>
+                <th class="p-3">Amount</th>
+                <th class="p-3">Location</th>
+                <th class="p-3">Risk Level</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#232536]">
+              <tr class="hover:bg-[#1a1b26]/50">
+                <td class="p-3 font-mono text-slate-400">Today, 2:15 PM</td>
+                <td class="p-3 font-semibold text-white">College Canteen <span class="font-normal font-mono text-slate-400 block text-[10px]">canteen@upi</span></td>
+                <td class="p-3 font-semibold text-white">₹350</td>
+                <td class="p-3 text-slate-400">Ludhiana</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold risk-badge-low">LOW (8)</span></td>
+                <td class="p-3 text-emerald-400 font-medium">Completed</td>
+              </tr>
+              <tr class="hover:bg-[#1a1b26]/50 bg-red-500/5">
+                <td class="p-3 font-mono text-slate-400">Yesterday, 11:15 PM</td>
+                <td class="p-3 font-semibold text-white">Unknown Recipient <span class="font-normal font-mono text-slate-400 block text-[10px]">rahulent@upi</span></td>
+                <td class="p-3 font-semibold text-red-400">₹48,000</td>
+                <td class="p-3 text-slate-400">Mumbai</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold risk-badge-high">HIGH (91)</span></td>
+                <td class="p-3 text-red-400 font-medium">Blocked</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT ANALYSIS VIEW -->
+    <div id="view-payment" class="space-y-6 hidden">
+      <div>
+        <p class="label-section">Interactive Risk Assessment</p>
+        <h2 class="text-2xl font-bold text-white mt-1">Payment Context Evaluation</h2>
+        <p class="text-sm text-slate-400">Evaluate transaction details against your behavioral baseline before authorizing funds.</p>
+      </div>
+
+      <!-- Quick Demo Selector -->
+      <div class="card p-4 bg-[#1a1b26] border-[#32354d]">
+        <p class="label-section mb-3">Load Demo Preset Scenarios:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button onclick="runDemoScenario('normal')" class="p-3 text-left card hover:border-emerald-500/50 bg-[#12131a] transition">
+            <p class="text-xs font-bold text-emerald-400 mb-1">✓ Normal Payment</p>
+            <p class="text-[11px] text-slate-400">₹350 to Canteen (Low Risk)</p>
+          </button>
+          <button onclick="runDemoScenario('suspicious')" class="p-3 text-left card hover:border-red-500/50 bg-[#12131a] transition">
+            <p class="text-xs font-bold text-red-400 mb-1">⚠️ Urgent KYC Scam</p>
+            <p class="text-[11px] text-slate-400">₹48,000 to New UPI (High Risk)</p>
+          </button>
+          <button onclick="switchTab('network')" class="p-3 text-left card hover:border-amber-500/50 bg-[#12131a] transition">
+            <p class="text-xs font-bold text-amber-400 mb-1">🕸️ Network Fraud</p>
+            <p class="text-[11px] text-slate-400">Coordinated Graph Anomaly</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form + Output -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Form -->
+        <div class="card p-6 space-y-4">
+          <h3 class="font-semibold text-white text-base">Transaction Input</h3>
+          <div>
+            <label class="label-section block mb-1">Recipient UPI ID</label>
+            <input type="text" id="input-recipient" class="input-field" value="rahulent@upi" placeholder="name@upi">
+          </div>
+          <div>
+            <label class="label-section block mb-1">Amount (₹)</label>
+            <input type="number" id="input-amount" class="input-field font-mono" value="48000" placeholder="1000">
+          </div>
+          <div>
+            <label class="label-section block mb-1">Payment Message / Reason</label>
+            <textarea id="input-message" class="input-field" rows="3">Urgent KYC verification required. Pay immediately to reactivate account.</textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label-section block mb-1">Location</label>
+              <input type="text" id="input-location" class="input-field text-xs" value="Mumbai, MH">
+            </div>
+            <div>
+              <label class="label-section block mb-1">Device Origin</label>
+              <select id="input-device" class="input-field text-xs">
+                <option value="trusted">iPhone 14 (Trusted)</option>
+                <option value="new" selected>Unknown Android (New)</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="calculateRiskEngine()" class="btn-primary w-full justify-center py-3 text-sm tracking-wide mt-2">
+            <i data-lucide="zap" class="w-4 h-4"></i> ANALYZE RISK NOW
+          </button>
+        </div>
+
+        <!-- Output Explanation Engine -->
+        <div id="risk-result-container" class="card p-6 space-y-5">
+          <div class="flex justify-between items-center border-b border-[#232536] pb-3">
+            <p class="label-section">Risk Analysis Assessment</p>
+            <span id="result-badge" class="px-2.5 py-1 rounded text-xs font-bold risk-badge-high">HIGH RISK</span>
+          </div>
+
+          <!-- Gauge score -->
+          <div class="text-center py-2">
+            <div class="text-5xl font-extrabold text-red-400 font-mono tracking-tight" id="result-score">91<span class="text-sm text-slate-500 font-normal">/100</span></div>
+            <p class="text-xs text-slate-400 mt-1" id="result-summary">Significant anomaly detected against behavioral baseline</p>
+          </div>
+
+          <!-- Risk Signals -->
+          <div class="space-y-3">
+            <p class="label-section">Detected Risk Signals:</p>
+            <div id="signals-list" class="space-y-2">
+              <div class="p-3 rounded bg-red-500/10 border border-red-500/20 text-xs">
+                <p class="font-bold text-red-300">🚨 Amount is 18× Higher Than Average</p>
+                <p class="text-slate-400 mt-0.5">₹48,000 far exceeds your typical ₹100–₹1,500 payment range.</p>
+              </div>
+              <div class="p-3 rounded bg-red-500/10 border border-red-500/20 text-xs">
+                <p class="font-bold text-red-300">👤 Unrecognized First-Time Recipient</p>
+                <p class="text-slate-400 mt-0.5">No previous transaction record for rahulent@upi.</p>
+              </div>
+              <div class="p-3 rounded bg-amber-500/10 border border-amber-500/20 text-xs">
+                <p class="font-bold text-amber-300">⚠️ Urgency & Threat Keywords Flagged</p>
+                <p class="text-slate-400 mt-0.5">Message matches social engineering phrases ("Urgent KYC").</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommendation -->
+          <div class="p-4 rounded bg-[#1a1b26] border border-[#32354d] text-xs space-y-2">
+            <p class="font-bold text-white">Recommended Action:</p>
+            <p class="text-slate-300 leading-relaxed" id="result-recommendation">DO NOT AUTHORIZE THIS PAYMENT. Contact your recipient via a separate verified channel.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK GRAPH VIEW -->
+    <div id="view-network" class="space-y-6 hidden">
+      <div>
+        <p class="label-section">Graph Intelligence</p>
+        <h2 class="text-2xl font-bold text-white mt-1">Coordinated Fraud Pattern Detection</h2>
+        <p class="text-sm text-slate-400">Identifies hub-and-spoke aggregation and rapid multi-account fund flows.</p>
+      </div>
+
+      <!-- Graph Container -->
+      <div class="card p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold text-white">Account Relationship Graph</h3>
+            <p class="text-xs text-slate-400">Red node = Destination Hub · Red arrows = High velocity transactions</p>
+          </div>
+          <span class="px-2.5 py-1 rounded text-xs font-bold risk-badge-high">PATTERN DETECTED</span>
+        </div>
+
+        <div class="bg-[#0b0c10] p-4 rounded border border-[#232536] flex justify-center">
+          <svg viewBox="0 0 500 360" class="w-full max-w-lg h-72">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#ef4444" />
+              </marker>
+              <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#475569" />
+              </marker>
+            </defs>
+
+            <!-- Lines -->
+            <line x1="80" y1="70" x2="230" y2="160" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)" />
+            <line x1="420" y1="70" x2="270" y2="160" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)" />
+            <line x1="80" y1="290" x2="230" y2="200" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)" />
+            <line x1="420" y1="290" x2="270" y2="200" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)" />
+            <line x1="80" y1="70" x2="80" y2="290" stroke="#475569" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow-gray)" />
+
+            <!-- Edge Labels -->
+            <text x="140" y="110" fill="#ef4444" font-size="10" font-family="monospace">₹12k</text>
+            <text x="340" y="110" fill="#ef4444" font-size="10" font-family="monospace">₹18k</text>
+            <text x="140" y="260" fill="#ef4444" font-size="10" font-family="monospace">₹9k</text>
+            <text x="340" y="260" fill="#ef4444" font-size="10" font-family="monospace">₹7k</text>
+
+            <!-- Nodes -->
+            <g transform="translate(80,70)">
+              <circle r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text text-anchor="middle" dy="0.35em" fill="#93c5fd" font-size="10" font-weight="600">Acc A</text>
+            </g>
+            <g transform="translate(420,70)">
+              <circle r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text text-anchor="middle" dy="0.35em" fill="#93c5fd" font-size="10" font-weight="600">Acc B</text>
+            </g>
+            <g transform="translate(80,290)">
+              <circle r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text text-anchor="middle" dy="0.35em" fill="#93c5fd" font-size="10" font-weight="600">Acc C</text>
+            </g>
+            <g transform="translate(420,290)">
+              <circle r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text text-anchor="middle" dy="0.35em" fill="#93c5fd" font-size="10" font-weight="600">Acc D</text>
+            </g>
+            
+            <!-- Suspicious Central Hub -->
+            <g transform="translate(250,180)">
+              <circle r="32" fill="#450a0a" stroke="#ef4444" stroke-width="3" />
+              <text text-anchor="middle" dy="0.35em" fill="#fca5a5" font-size="11" font-weight="bold">Account X</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="p-4 rounded bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
+          <p class="font-bold mb-1">Hub-and-Spoke Anomaly Explanation:</p>
+          <p class="text-slate-300">5 unconnected accounts initiated transfers totaling ₹5,04,000 to Account X within a 15-minute window. This topology is strongly associated with money mule aggregation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="view-profile" class="space-y-6 hidden">
+      <div>
+        <p class="label-section">Behavioral Baseline</p>
+        <h2 class="text-2xl font-bold text-white mt-1">Ayush Sharma — User Profile</h2>
+        <p class="text-sm text-slate-400">Historical transaction baseline used for anomaly comparison.</p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card p-4"><p class="label-section">Average Payment</p><p class="text-xl font-bold text-white mt-1">₹620</p></div>
+        <div class="card p-4"><p class="label-section">Typical Range</p><p class="text-xl font-bold text-white mt-1">₹100–₹1,500</p></div>
+        <div class="card p-4"><p class="label-section">Trusted Devices</p><p class="text-xl font-bold text-white mt-1">2 Devices</p></div>
+        <div class="card p-4"><p class="label-section">Known Contacts</p><p class="text-xl font-bold text-white mt-1">12 UPI IDs</p></div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS VIEW -->
+    <div id="view-transactions" class="space-y-6 hidden">
+      <div>
+        <p class="label-section">Audit Log</p>
+        <h2 class="text-2xl font-bold text-white mt-1">All Transaction Logs</h2>
+        <p class="text-sm text-slate-400">Full audit trail of processed payments and risk scores.</p>
+      </div>
+
+      <div class="card p-4">
+        <p class="text-sm text-slate-300">All 42 transactions recorded and analyzed with risk tags.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Tab Navigation
+    function switchTab(tabId) {
+      ['dashboard', 'payment', 'network', 'profile', 'transactions'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        document.getElementById(`nav-${t}`).classList.remove('active');
+      });
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).classList.add('active');
+    }
+
+    // Demo Scenarios
+    function runDemoScenario(type) {
+      switchTab('payment');
+      if (type === 'normal') {
+        document.getElementById('input-recipient').value = 'canteen@upi';
+        document.getElementById('input-amount').value = '350';
+        document.getElementById('input-message').value = 'Lunch split';
+        document.getElementById('input-device').value = 'trusted';
+      } else if (type === 'suspicious') {
+        document.getElementById('input-recipient').value = 'rahulent@upi';
+        document.getElementById('input-amount').value = '48000';
+        document.getElementById('input-message').value = 'Urgent KYC verification required. Pay immediately to reactivate account.';
+        document.getElementById('input-device').value = 'new';
+      }
+      calculateRiskEngine();
+    }
+
+    // Interactive Risk Calculator
+    function calculateRiskEngine() {
+      const recipient = document.getElementById('input-recipient').value;
+      const amount = parseFloat(document.getElementById('input-amount').value) || 0;
+      const message = document.getElementById('input-message').value.toLowerCase();
+      const device = document.getElementById('input-device').value;
+
+      let score = 5;
+      let signals = [];
+
+      if (amount > 5000) {
+        score += 40;
+        signals.push({ title: '🚨 Amount Significantly Above Average', desc: `₹${amount.toLocaleString()} is far outside your typical ₹100–₹1,500 range.`, high: true });
+      }
+      if (recipient !== 'canteen@upi') {
+        score += 25;
+        signals.push({ title: '👤 Unrecognized Recipient', desc: `${recipient} has no prior payment history in your account.`, high: true });
+      }
+      if (device === 'new') {
+        score += 20;
+        signals.push({ title: '📱 Unassociated Device', desc: 'Transaction originated from an unrecognized device hardware ID.', high: false });
+      }
+      if (message.includes('kyc') || message.includes('urgent') || message.includes('pay immediately')) {
+        score += 15;
+        signals.push({ title: '⚠️ Social Engineering Phrase Flagged', desc: 'Payment note matches known urgency & threat keywords.', high: false });
+      }
+
+      score = Math.min(99, score);
+
+      const badge = document.getElementById('result-badge');
+      const scoreElem = document.getElementById('result-score');
+      const summaryElem = document.getElementById('result-summary');
+      const signalsContainer = document.getElementById('signals-list');
+      const recElem = document.getElementById('result-recommendation');
+
+      if (score >= 60) {
+        badge.className = 'px-2.5 py-1 rounded text-xs font-bold risk-badge-high';
+        badge.innerText = 'HIGH RISK';
+        scoreElem.className = 'text-5xl font-extrabold text-red-400 font-mono tracking-tight';
+        summaryElem.innerText = 'High risk anomaly detected against baseline behavior.';
+        recElem.innerText = 'DO NOT AUTHORIZE THIS PAYMENT. Verify recipient via an independent phone call.';
+      } else if (score >= 30) {
+        badge.className = 'px-2.5 py-1 rounded text-xs font-bold risk-badge-med';
+        badge.innerText = 'MEDIUM RISK';
+        scoreElem.className = 'text-5xl font-extrabold text-amber-400 font-mono tracking-tight';
+        summaryElem.innerText = 'Moderate risk detected. Review payment details.';
+        recElem.innerText = 'Proceed with caution. Confirm recipient identity before confirming.';
+      } else {
+        badge.className = 'px-2.5 py-1 rounded text-xs font-bold risk-badge-low';
+        badge.innerText = 'LOW RISK';
+        scoreElem.className = 'text-5xl font-extrabold text-emerald-400 font-mono tracking-tight';
+        summaryElem.innerText = 'Payment is consistent with normal transaction behavior.';
+        recElem.innerText = 'This payment matches your normal habits. Safe to proceed.';
+      }
+
+      scoreElem.innerHTML = `${score}<span class="text-sm text-slate-500 font-normal">/100</span>`;
+
+      if (signals.length === 0) {
+        signalsContainer.innerHTML = '<div class="p-3 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">✓ No risk signals detected.</div>';
+      } else {
+        signalsContainer.innerHTML = signals.map(s => `
+          <div class="p-3 rounded ${s.high ? 'bg-red-500/10 border border-red-500/20' : 'bg-amber-500/10 border border-amber-500/20'} text-xs">
+            <p class="font-bold ${s.high ? 'text-red-300' : 'text-amber-300'}">${s.title}</p>
+            <p class="text-slate-400 mt-0.5">${s.desc}</p>
+          </div>
+        `).join('');
+      }
+    }
+  </script>
+</body>
+</html>
